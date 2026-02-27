@@ -93,27 +93,26 @@ function searchJSON(query) {
    AI ENGINE
    ========================= */
 
-async function askAI(query) {
+/* =========================
+   SAFE AI ENGINE
+   ========================= */
 
-    let q =
-    query.toLowerCase();
+async function askAI(query){
 
-
+    let q = query.toLowerCase();
 
     /* LOCAL AI */
 
-    let local =
-    searchJSON(query);
+    let local = searchJSON(query);
 
-    if (local)
-
-    return local;
+    if(local)
+    return String(local);
 
 
 
     /* IMAGE AI */
 
-    if (
+    if(
     q.includes("image") ||
     q.includes("draw") ||
     q.includes("generate")
@@ -122,15 +121,9 @@ async function askAI(query) {
         let seed = Math.random();
 
         return `
-        
         <img
-        
         src="https://image.pollinations.ai/prompt/${encodeURIComponent(query)}?seed=${seed}"
-        
-        style="width:100%;border-radius:10px;"
-        
-        >
-        
+        style="width:100%;border-radius:10px;">
         `;
 
     }
@@ -141,8 +134,7 @@ async function askAI(query) {
 
     try{
 
-        let search =
-        await fetch(
+        let searchResponse = await fetch(
 
         "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch="
 
@@ -150,18 +142,25 @@ async function askAI(query) {
 
         "&format=json&origin=*"
 
-        ).then(r=>r.json());
+        );
+
+        let searchData = await searchResponse.json();
+
 
 
         if(
-        search.query.search.length>0
+        searchData &&
+        searchData.query &&
+        searchData.query.search &&
+        searchData.query.search.length>0
         ){
 
             let title =
-            search.query.search[0].title;
+            searchData.query.search[0].title;
 
 
-            let page =
+
+            let pageResponse =
             await fetch(
 
             "https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&titles="
@@ -170,27 +169,40 @@ async function askAI(query) {
 
             "&format=json&origin=*"
 
-            ).then(r=>r.json());
+            );
+
+
+
+            let pageData =
+            await pageResponse.json();
+
 
 
             let pages =
-            page.query.pages;
+            pageData.query.pages;
 
 
-            let extract =
+
+            let page =
             pages[
             Object.keys(pages)[0]
-            ].extract;
+            ];
 
 
 
-            return
+            if(
+            page &&
+            page.extract &&
+            page.extract.length>0
+            ){
 
-            "<b>"+title+"</b><br><br>"
+                return "<b>"+title+"</b><br><br>"
 
-            +extract.substring(0,400)
+                +page.extract.substring(0,400)
 
-            +"...";
+                +"...";
+
+            }
 
         }
 
@@ -198,18 +210,17 @@ async function askAI(query) {
 
     catch(e){
 
-        console.log("Wiki error");
+        console.log("Wiki error",e);
 
     }
 
 
 
-    return
+    /* DEFAULT */
 
-    "I don't know that yet.";
+    return "No answer found.";
 
 }
-
 
 
 /* =========================
